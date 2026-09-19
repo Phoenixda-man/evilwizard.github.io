@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>N64 Wasm</title>
+    <title>Evil N64</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="keywords" content="N64 Emulator, N64 JavaScript Emulator, WebAssembly, HTML5, Nintendo 64">
     <meta charset="UTF-8">
@@ -136,14 +136,14 @@
 <body>
     <div id="maindiv" class="container text-center">
         <h1>
-            N64 Wasm
+            Evil N64
         </h1>
         <div id="topPanel" style="display: none;">
 
             <!-- BEFORE LOAD -->
             <div rv-if="data.beforeEmulatorStarted">
                 <button id="btnPlayGame" class="btn btn-primary mt-4" onclick="myClass.loadRom();" rv-if="data.hasRoms"
-                    rv-disabled="data.moduleInitializing">Play Game</button>
+                    rv-disabled="data.moduleInitializing">Run</button>
                 <button id="btnUploadRom" class="btn btn-primary mt-4" onclick="myApp.uploadBrowse()"
                         rv-disabled="data.moduleInitializing">Browse</button>
                 <button type="button" class="btn btn-primary mt-4" id="btnRemap" onclick="myApp.showRemapModal()">
