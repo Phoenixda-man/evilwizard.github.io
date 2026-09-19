@@ -2,7 +2,162 @@
 <html>
 
 <head>
-    
+    <!DOCTYPE html>
+<html>
+
+<head>
+    <script>
+    // --- CHROMEBOOK HARDWARE GPU ACCELERATION INJECTION ---
+    // This forcibly intercepts Emscripten's canvas context generator before n64wasm.js boots.
+    // It tells the browser to run at absolute maximum graphics capacity or crash.
+    var Module = {
+        arguments: ["--frameskip", "4", "--low-res"],
+        print: console.log,
+        printErr: console.warn,
+        
+        // This overrides Emscripten's inner WebGL attributes directly
+        getContextAttributes: function() {
+            return {
+                alpha: false,
+                depth: true,
+                stencil: false,
+                antialias: false,                // Disabling antialiasing instantly saves huge GPU bandwidth
+                premultipliedAlpha: false,
+                preserveDrawingBuffer: false,
+                preferLowPowerToHighPerformance: false, // CRUCIAL: Forces Chromebook high performance GPU
+                failIfMajorPerformanceCaveat: false     // Prevents Chrome from falling back to slow 3FPS software rendering
+            };
+        },
+        preRun: [function() {
+            console.log("Forcing webgl hardware pipelines...");
+            
+            // Intercept standard browser context generation to demand high performance execution
+            const originalGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function(type, attributes) {
+                if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+                    attributes = attributes || {};
+                    attributes.preferLowPowerToHighPerformance = false; // Demand maximum GPU power
+                    attributes.failIfMajorPerformanceCaveat = false;
+                    attributes.antialias = false;
+                    console.log("Hardware Acceleration Context Forced via Hook for: " + type);
+                }
+                return originalGetContext.call(this, type, attributes);
+            };
+        }]
+    };
+    </script>
+
+    <title>Evil N64</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="keywords" content="N64 Emulator, N64 JavaScript Emulator, WebAssembly, HTML5, Nintendo 64">
+    <meta charset="UTF-8">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rivets/0.9.6/rivets.bundled.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.2/dist/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.0/nipplejs.min.js"></script>
+    <script>
+        function getSystemDarkMode(){
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        const darkMode = localStorage.getItem('n64wasm-darkMode');
+        if ((darkMode !== null ? darkMode === "true" : getSystemDarkMode())) {
+            document.documentElement.dataset.darkmode = true;
+        }
+    </script>
+    <style>
+        input[type="file"] { display: none; }
+        .table td, .table th { padding: 5px; }
+        .regularTable td, .regularTable th { padding: 0; vertical-align: top; border-top: 0px; }
+        .start-z-button { background-color: rgb(199, 199, 230); }
+        .b-a-button { background-color: rgb(199, 199, 230); }
+        .buttonhold { background-color: lightsalmon; }
+        .nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active { color: #000c40; }
+        .github-logo { display:inline-block; padding-left:10px; }
+        .github-link { color:black; font-weight: 600; }
+        .github-link:hover { color:black; }
+        .githubSvg { height:21px; width:21px; color: black; }
+        .touchsurface { color: lightgray; position: absolute; width: 100%; height: 800px; }
+
+        [data-darkmode="true"] {
+            body { background-color: black; color: white; }
+            #menuDiv { color: black; }
+            .card-body { color:white; background-color: #000c40; }
+            h1, a, .github-logo, .github-link, .github-link:hover, .githubSvg, label, th, input, ul { color: white; }
+            .modal-content, .form-control, .form-control:focus, .form-control:disabled { background-color: #000c40; color: white; }
+            .modal-content{ border: 3px solid white; }
+            .start-z-button { color: white; background-color: rgb(42, 42, 42); }
+            .b-a-button { color: white; background-color: rgb(80, 80, 80); }
+            .touchsurface, .nav-link.active:hover { color: rgb(72, 72, 72); background-color: rgb(20, 20, 20); }
+            .buttonhold { background-color: darkslategray; }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="maindiv" class="container text-center">
+        <h1>Evil N64</h1>
+        <div id="topPanel" style="display: none;">
+
+            <!-- BEFORE LOAD -->
+            <div rv-if="data.beforeEmulatorStarted">
+                <button id="btnPlayGame" class="btn btn-primary mt-4" onclick="myClass.loadRom();" rv-if="data.hasRoms" rv-disabled="data.moduleInitializing">Run</button>
+                <button id="btnUploadRom" class="btn btn-primary mt-4" onclick="myApp.uploadBrowse()" rv-disabled="data.moduleInitializing">Browse</button>
+                <button type="button" class="btn btn-primary mt-4" id="btnRemap" onclick="myApp.showRemapModal()">Remap Buttons</button>
+                <span rv-if="data.showLogin">
+                    <button class="btn btn-primary mt-4" rv-if="data.loggedIn | ev '==false'" onclick="myApp.loginModal()">Login</button>
+                    <button class="btn btn-primary mt-4" rv-if="data.loggedIn | ev '==true'" onclick="myApp.logout()">Logout</button>
+                </span>
+
+                <div class="form-check" style="margin-top: 13px;" rv-if="data.settings.SHOWADVANCED">
+                    <label class="form-check-label" style="margin-right: 10px;">
+                        <input type="checkbox" class="form-check-input" rv-checked="data.chkAdvanced" rv-disabled="data.moduleInitializing">
+                        Advanced
+                    </label>
+                </div>
+
+                <div class="card" style="width: 18rem;margin-left: auto;margin-right: auto;margin-top: 20px;margin-bottom: 31px;" rv-if="data.chkAdvanced">
+                    <div class="card-body">
+                        <h5 class="card-title">Advanced</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Options</h6>
+                        <button id="btnUploadEep" class="btn btn-secondary mt-4" onclick="myApp.uploadEepBrowse()">Import Save File (EEP)</button>
+                        <div rv-if="data.eepName | ev_string '.length > 0'">{ data.eepName }</div>
+                        <button id="btnUploadSra" class="btn btn-secondary mt-4" onclick="myApp.uploadSraBrowse()">Import Save File (SRA)</button>
+                        <div rv-if="data.sraName | ev_string '.length > 0'">{ data.sraName }</div>
+                        <button id="btnUploadFla" class="btn btn-secondary mt-4" onclick="myApp.uploadFlaBrowse()">Import Save File (FLA)</button>
+                        <div rv-if="data.flaName | ev_string '.length > 0'">{ data.flaName }</div>
+                    </div>
+                </div>
+
+                <input id="file-upload-eep" type="file" />
+                <input id="file-upload-sra" type="file" />
+                <input id="file-upload-fla" type="file" />
+                <input id="file-upload" type="file" />
+
+                <!-- ROM LIST -->
+                <div class="form-group mt-2 mb-4" rv-if="data.hasRoms" style="width: 300px;margin-left: auto; margin-right:auto;">
+                    <select class="form-control" id="romselect">
+                        <option rv-each-rom="data.romList" rv-value="rom.url">{rom.title}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CORE DEPENDENCIES -->
+    <script src="romlist.js"></script>
+    <script src="settings.js"></script>
+    <script src="input_controller.js"></script>
+    <script src="script.js"></script>
+    <script src="n64wasm.js"></script>
+</body>
+</html>
+
 
     <title>Evil N64</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
