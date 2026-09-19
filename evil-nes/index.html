@@ -1,107 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Evil NES</title>
-  <style>
-    body {
-      background: #000c40;
-      color: #efefef;
-      font-family: monospace;
-      text-align: center;
-    }
-    #viewport {
-      image-rendering: pixelated;
-      background: #000;
-      margin-top: 20px;
-      border: 2px solid #880000;
-    }
-  </style>
-
-  <!-- Evil NES engine (local file) -->
-  <script src="core/engine.js"></script>
+    <meta charset="UTF-8">
+    <title>Evil NES</title>
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; background: #000c40; color: #efefef; font-family: sans-serif; }
+        canvas { border: 4px solid #000c50; background: #000c40; }
+    </style>
 </head>
 <body>
-  <h1>Evil NES</h1>
-  <p>Load your ROM:</p>
-  <input type="file" id="artifact" accept=".nes">
-
-  <canvas id="viewport" width="256" height="240"></canvas>
-
-  <script>
-    const canvas = document.getElementById('viewport');
-    const ctx = canvas.getContext('2d');
-    const img = ctx.getImageData(0, 0, 256, 240);
-
-    const evilNES = new jsnes.NES({
-      onFrame: function (buf) {
-        for (let i = 0; i < buf.length; i++) {
-          const c = buf[i];
-          const r = (c >> 16) & 0xFF;
-          const g = (c >> 8) & 0xFF;
-          const b = c & 0xFF;
-          const idx = i * 4;
-          img.data[idx] = r;
-          img.data[idx+1] = g;
-          img.data[idx+2] = b;
-          img.data[idx+3] = 255;
-        }
-        ctx.putImageData(img, 0, 0);
-      }
-    });
-
-    document.getElementById('artifact').addEventListener('change', e => {
-      const f = e.target.files[0];
-      const r = new FileReader();
-      r.onload = () => {
-        evilNES.loadROM(r.result);
-        start();
-      };
-      r.readAsBinaryString(f);
-    });
-
-    let active = false;
-    function start() {
-      if (!active) {
-        active = true;
-        requestAnimationFrame(loop);
-      }
-    }
-
-    function loop() {
-      if (!active) return;
-      evilNES.frame();
-      requestAnimationFrame(loop);
-    }
-
-    const MAP = {
-      ArrowUp: jsnes.Controller.BUTTON_UP,
-      ArrowDown: jsnes.Controller.BUTTON_DOWN,
-      ArrowLeft: jsnes.Controller.BUTTON_LEFT,
-      ArrowRight: jsnes.Controller.BUTTON_RIGHT,
-      KeyW: jsnes.Controller.BUTTON_UP,
-      KeyS: jsnes.Controller.BUTTON_DOWN,
-      KeyA: jsnes.Controller.BUTTON_LEFT,
-      KeyD: jsnes.Controller.BUTTON_RIGHT,
-      KeyZ: jsnes.Controller.BUTTON_A,
-      KeyX: jsnes.Controller.BUTTON_B,
-      Enter: jsnes.Controller.BUTTON_START,
-      Space: jsnes.Controller.BUTTON_SELECT
-    };
-
-    window.addEventListener('keydown', e => {
-      if (MAP[e.code] !== undefined) {
-        e.preventDefault();
-        evilNES.buttonDown(1, MAP[e.code]);
-      }
-    });
-
-    window.addEventListener('keyup', e => {
-      if (MAP[e.code] !== undefined) {
-        e.preventDefault();
-        evilNES.buttonUp(1, MAP[e.code]);
-      }
-    });
-  </script>
+    <h1></h1>
+    <canvas id="nes-canvas" width="256" height="240"></canvas>
+    
+    <!-- Load JSNES from a CDN -->
+    <script src="https://cloudflare.com"></script>
+    <script src="app.js"></script>
 </body>
 </html>
