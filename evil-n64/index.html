@@ -2,46 +2,7 @@
 <html>
 
 <head>
-    <script>
-    // --- CHROMEBOOK HARDWARE GPU ACCELERATION INJECTION ---
-    // This forcibly intercepts Emscripten's canvas context generator before n64wasm.js boots.
-    // It tells the browser to run at absolute maximum graphics capacity or crash.
-    var Module = {
-        arguments: ["--frameskip", "4", "--low-res"],
-        print: console.log,
-        printErr: console.warn,
-        
-        // This overrides Emscripten's inner WebGL attributes directly
-        getContextAttributes: function() {
-            return {
-                alpha: false,
-                depth: true,
-                stencil: false,
-                antialias: false,                // Disabling antialiasing instantly saves huge GPU bandwidth
-                premultipliedAlpha: false,
-                preserveDrawingBuffer: false,
-                preferLowPowerToHighPerformance: false, // CRUCIAL: Forces Chromebook high performance GPU
-                failIfMajorPerformanceCaveat: false     // Prevents Chrome from falling back to slow 3FPS software rendering
-            };
-        },
-        preRun: [function() {
-            console.log("Forcing webgl hardware pipelines...");
-            
-            // Intercept standard browser context generation to demand high performance execution
-            const originalGetContext = HTMLCanvasElement.prototype.getContext;
-            HTMLCanvasElement.prototype.getContext = function(type, attributes) {
-                if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
-                    attributes = attributes || {};
-                    attributes.preferLowPowerToHighPerformance = false; // Demand maximum GPU power
-                    attributes.failIfMajorPerformanceCaveat = false;
-                    attributes.antialias = false;
-                    console.log("Hardware Acceleration Context Forced via Hook for: " + type);
-                }
-                return originalGetContext.call(this, type, attributes);
-            };
-        }]
-    };
-</script>
+    
 
     <title>Evil N64</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
