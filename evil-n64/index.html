@@ -8,35 +8,34 @@
 <head>
     <script>
     // --- CHROMEBOOK HARDWARE GPU ACCELERATION INJECTION ---
-    // This forcibly intercepts Emscripten's canvas context generator before n64wasm.js boots.
-    // It tells the browser to run at absolute maximum graphics capacity or crash.
+    // Pre-declare the Emscripten Module object before any other library loads.
+    // This tells the engine to run at maximum graphics capacity.
     var Module = {
         arguments: ["--frameskip", "4", "--low-res"],
         print: console.log,
         printErr: console.warn,
         
-        // This overrides Emscripten's inner WebGL attributes directly
         getContextAttributes: function() {
             return {
                 alpha: false,
                 depth: true,
                 stencil: false,
-                antialias: false,                // Disabling antialiasing instantly saves huge GPU bandwidth
+                antialias: false,                
                 premultipliedAlpha: false,
                 preserveDrawingBuffer: false,
-                preferLowPowerToHighPerformance: false, // CRUCIAL: Forces Chromebook high performance GPU
-                failIfMajorPerformanceCaveat: false     // Prevents Chrome from falling back to slow 3FPS software rendering
+                preferLowPowerToHighPerformance: false, 
+                failIfMajorPerformanceCaveat: false     
             };
         },
         preRun: [function() {
             console.log("Forcing webgl hardware pipelines...");
             
-            // Intercept standard browser context generation to demand high performance execution
+            // Intercept browser context generation to request high performance
             const originalGetContext = HTMLCanvasElement.prototype.getContext;
             HTMLCanvasElement.prototype.getContext = function(type, attributes) {
                 if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
                     attributes = attributes || {};
-                    attributes.preferLowPowerToHighPerformance = false; // Demand maximum GPU power
+                    attributes.preferLowPowerToHighPerformance = false; 
                     attributes.failIfMajorPerformanceCaveat = false;
                     attributes.antialias = false;
                     console.log("Hardware Acceleration Context Forced via Hook for: " + type);
@@ -51,22 +50,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="keywords" content="N64 Emulator, N64 JavaScript Emulator, WebAssembly, HTML5, Nintendo 64">
     <meta charset="UTF-8">
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/rivets/0.9.6/rivets.bundled.min.js"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.2/dist/FileSaver.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.0/nipplejs.min.js"></script>
+    <script src="https://jquery.com"></script>
+    <script src="https://cloudflare.com"></script>
+    <link rel="stylesheet" href="https://bootstrapcdn.com">
+    <script src="https://cloudflare.com"></script>
+    <script src="https://bootstrapcdn.com"></script>
+    <script src="https://cloudflare.com"></script>
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://cloudflare.com"></script>
     <script>
+        // The original script used a clean layout function
         function getSystemDarkMode(){
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         }
 
-        const darkMode = localStorage.getItem('n64wasm-darkMode');
-        if ((darkMode !== null ? darkMode === "true" : getSystemDarkMode())) {
+        // Removed the duplicate 'const darkMode' declaration that was causing the crash
+        var savedDarkMode = localStorage.getItem('n64wasm-darkMode');
+        if ((savedDarkMode !== null ? savedDarkMode === "true" : getSystemDarkMode())) {
             document.documentElement.dataset.darkmode = true;
         }
     </script>
@@ -149,7 +150,7 @@
         </div>
     </div>
 
-    <!-- CORE DEPENDENCIES -->
+    <!-- FIXED CORE SEQUENCE: Settings and Controller dependencies must evaluate first -->
     <script src="romlist.js"></script>
     <script src="settings.js"></script>
     <script src="input_controller.js"></script>
@@ -157,7 +158,6 @@
     <script src="n64wasm.js"></script>
 </body>
 </html>
-
 
     <title>Evil N64</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
