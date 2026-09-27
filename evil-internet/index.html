@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="t-node">...</title>
     <link id="i-node" rel="icon" type="image/x-icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-    <link rel="stylesheet" href="https://pyscript.net" />
-    <script defer src="https://pyscript.net"></script>
+    <link rel="stylesheet" href="https://cloudflare.com" />
+    <script type="module" src="https://cloudflare.com"></script>
     <style>
         body { background-color: #000c40; margin: 0; padding: 20px; overflow: hidden; }
         #v-port { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; }
@@ -214,6 +214,6 @@
 
         document.fonts.load('1em "EB Garamond"').then(() => { drawFrame(); });
     </script>
-    <py-script src="engine.py"></py-script>
+    <script type="py" src="engine.py" async></script>
 </body>
 </html>
