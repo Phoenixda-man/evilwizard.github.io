@@ -1,4 +1,4 @@
-let blinkState = false;
+let cursorVisibility = false;
 
 const uiComponents = [
     {
@@ -11,77 +11,91 @@ const uiComponents = [
         id: "brand-header-text",
         type: "text",
         x: 25, y: 34,
-        color: "#58a6ff", fontProp: "body", fontSize: "22px", fontWeight: "bold",
+        color: "#c9d1d9", fontSize: "18px", fontWeight: "600",
         value: () => "SiteMask"
     },
     {
         id: "search-input-field",
         type: "input-field",
-        x: 180, y: 12, w: 550, h: 30,
+        x: 140, y: 12, w: 680, h: 32,
         bg: "#0d1117", border: "#30363d",
-        textX: 195, textY: 31, fontProp: "body", fontSize: "13px"
+        textX: 155, textY: 32, fontSize: "14px",
+        placeholder: "Text goes here..."
     },
     {
         id: "search-action-btn",
         type: "button",
-        x: 745, y: 12, w: 85, h: 30,
-        bg: "#da3637", color: "#ffffff", fontProp: "body", fontSize: "13px", fontWeight: "bold",
-        value: () => "SEARCH",
+        x: 835, y: 12, w: 90, h: 32,
+        bg: "#238636", color: "#ffffff", fontSize: "13px", fontWeight: "600",
+        value: () => "Search",
         action: 1
     },
+    
+    // COMPACT SPOOF TRIGGER PANEL
     {
-        id: "spoof-trigger-btn",
-        type: "button",
-        x: 840, y: 12, w: 90, h: 30,
-        bg: "#238636", color: "#ffffff", fontProp: "body", fontSize: "12px", fontWeight: "bold",
-        value: () => "SPOOF TAB",
-        action: 2
+        id: "spoof-panel-bg",
+        type: "panel",
+        x: 25, y: 615, w: 900, h: 60,
+        bg: "#161b22", border: "#30363d"
     },
-    // Cloaking Configuration Profiles Setup Area
-    { id: "p1", type: "profile-node", x: 50, y: 640, w: 100, h: 25, bg: "#21262d", txt: "Google Profile", t: "Google", i: "https://google.com" },
-    { id: "p2", type: "profile-node", x: 160, y: 640, w: 100, h: 25, bg: "#21262d", txt: "Canvas Profile", t: "Instructure Canvas", i: "https://instructure.com" }
+    {
+        id: "spoof-status-text",
+        type: "text",
+        x: 45, y: 650,
+        color: "#8b949e", fontSize: "13px", fontWeight: "normal",
+        value: () => window.stateSpoofLabel || "Spoof: None Set"
+    },
+    {
+        id: "spoof-action-trigger-btn",
+        type: "button",
+        x: 775, y: 628, w: 130, h: 32,
+        bg: "#da3637", color: "#ffffff", fontSize: "13px", fontWeight: "600",
+        value: () => "Spoof",
+        action: 2
+    }
 ];
 
 function drawEngineFrame(ctx, canvas, state) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let clickRegistry = [];
     let contentStartY = 110;
-    blinkState = !blinkState;
+    cursorVisibility = !cursorVisibility;
+    
+    window.stateSpoofLabel = state.spoofUrl ? `Active Spoof Path -> /${state.spoofUrl}` : "Active Cloak Profile: None Set";
 
     if (state.sMode === 1) {
         state.tRender.style.display = "none";
         state.siteEntries.forEach((entry, idx) => {
-            let yPos = contentStartY + (idx * 95) + state.scrollOffset;
-            if (yPos < 65 || yPos > canvas.height + 20) return;
+            let yPos = contentStartY + (idx * 90) + state.scrollOffset;
+            if (yPos < 65 || yPos > canvas.height - 110) return;
 
             ctx.fillStyle = "#58a6ff";
-            ctx.font = "bold 20px sans-serif";
-            ctx.fillText(entry.text, 50, yPos);
+            ctx.font = "600 18px sans-serif";
+            ctx.fillText(entry.text, 25, yPos);
 
             ctx.fillStyle = "#8b949e";
             ctx.font = "14px sans-serif";
-            ctx.fillText("System registry stream node entry detail profile description.", 50, yPos + 24);
+            ctx.fillText("Resource location endpoint payload directory.", 25, yPos + 22);
 
             clickRegistry.push({
-                x: 50, y: yPos - 20, w: ctx.measureText(entry.text).width, h: 24,
+                x: 25, y: yPos - 18, w: ctx.measureText(entry.text).width, h: 22,
                 type: "interactive-node", action: 3, index: idx
             });
         });
-        state.maxScroll = Math.max(0, (state.siteEntries.length * 95) - (canvas.height - 160));
+        state.maxScroll = Math.max(0, (state.siteEntries.length * 90) - 450);
     } else if (state.sMode === 2) {
         state.tRender.style.display = "block";
     } else if (state.sMode === 0) {
         state.tRender.style.display = "none";
-        ctx.fillStyle = "#58a6ff";
-        ctx.font = "bold 42px sans-serif";
-        ctx.fillText("SiteMask Dashboard", 50, 220);
+        ctx.fillStyle = "#c9d1d9";
+        ctx.font = "600 32px sans-serif";
+        ctx.fillText("SiteMask", 25, 200);
         
         ctx.fillStyle = "#8b949e";
-        ctx.font = "16px sans-serif";
-        ctx.fillText("Type a target location query path above and click SEARCH.", 50, 270);
+        ctx.font = "14px sans-serif";
+        ctx.fillText("Press the red button to finish spoofing.", 25, 240);
     }
 
-    // Process Declarative Config Components Stream
     uiComponents.forEach(comp => {
         ctx.font = (comp.fontWeight ? comp.fontWeight + " " : "") + (comp.fontSize || "14px") + " sans-serif";
 
@@ -89,6 +103,7 @@ function drawEngineFrame(ctx, canvas, state) {
             ctx.fillStyle = comp.bg;
             ctx.fillRect(comp.x, comp.y, comp.w, comp.h);
             ctx.strokeStyle = comp.border;
+            ctx.lineWidth = 1;
             ctx.strokeRect(comp.x, comp.y, comp.w, comp.h);
         }
         else if (comp.type === "text") {
@@ -96,30 +111,27 @@ function drawEngineFrame(ctx, canvas, state) {
             ctx.fillText(comp.value(), comp.x, comp.y);
         }
         else if (comp.type === "input-field") {
+            let hasFocus = state.isFocused;
+
             ctx.fillStyle = comp.bg;
             ctx.fillRect(comp.x, comp.y, comp.w, comp.h);
-            ctx.strokeStyle = state.isFocused ? "#58a6ff" : comp.border;
+            ctx.strokeStyle = hasFocus ? "#58a6ff" : comp.border;
             ctx.strokeRect(comp.x, comp.y, comp.w, comp.h);
 
-            let pathPrefix = "https://github.com";
-            ctx.fillStyle = "#8b949e";
-            ctx.fillText(pathPrefix, comp.textX, comp.textY);
-            let prefixW = ctx.measureText(pathPrefix).width;
-
             if (state.queryStr === "") {
-                ctx.fillStyle = "rgba(139, 148, 158, 0.4)";
-                ctx.fillText("Text goes here", comp.textX + prefixW, comp.textY);
-                if (state.isFocused && blinkState) {
+                ctx.fillStyle = "rgba(139, 148, 158, 0.5)";
+                ctx.fillText(comp.placeholder, comp.textX, comp.textY);
+                if (hasFocus && cursorVisibility) {
                     ctx.fillStyle = "#58a6ff";
-                    ctx.fillRect(comp.textX + prefixW, comp.textY - 12, 2, 14);
+                    ctx.fillRect(comp.textX, comp.textY - 13, 2, 16);
                 }
             } else {
                 ctx.fillStyle = "#c9d1d9";
-                ctx.fillText(state.queryStr, comp.textX + prefixW, comp.textY);
-                if (state.isFocused && blinkState) {
+                ctx.fillText(state.queryStr, comp.textX, comp.textY);
+                if (hasFocus && cursorVisibility) {
                     let typedW = ctx.measureText(state.queryStr).width;
                     ctx.fillStyle = "#58a6ff";
-                    ctx.fillRect(comp.textX + prefixW + typedW + 2, comp.textY - 12, 2, 14);
+                    ctx.fillRect(comp.textX + typedW + 2, comp.textY - 13, 2, 16);
                 }
             }
 
@@ -129,28 +141,11 @@ function drawEngineFrame(ctx, canvas, state) {
             ctx.fillStyle = comp.bg;
             ctx.fillRect(comp.x, comp.y, comp.w, comp.h);
             ctx.fillStyle = comp.color;
-            let strVal = comp.value();
-            let txtW = ctx.measureText(strVal).width;
-            ctx.fillText(strVal, comp.x + ((comp.w - txtW) / 2), comp.y + 19);
+            let label = comp.value();
+            let txtW = ctx.measureText(label).width;
+            ctx.fillText(label, comp.x + ((comp.w - txtW) / 2), comp.y + 20);
 
             clickRegistry.push({ x: comp.x, y: comp.y, w: comp.w, h: comp.h, type: "button", action: comp.action });
-        }
-        else if (comp.type === "profile-node") {
-            // Check if active selector profile is chosen
-            let isSelected = (state.spoofTitle === comp.t);
-            ctx.fillStyle = comp.bg;
-            ctx.fillRect(comp.x, comp.y, comp.w, comp.h);
-            ctx.strokeStyle = isSelected ? "#238636" : "#30363d";
-            ctx.strokeRect(comp.x, comp.y, comp.w, comp.h);
-
-            ctx.fillStyle = isSelected ? "#238636" : "#8b949e";
-            ctx.font = "11px sans-serif";
-            ctx.fillText(comp.txt, comp.x + 10, comp.y + 16);
-
-            clickRegistry.push({
-                x: comp.x, y: comp.y, w: comp.w, h: comp.h,
-                type: "button", action: 4, profileTitle: comp.t, profileIcon: comp.i
-            });
         }
     });
 
