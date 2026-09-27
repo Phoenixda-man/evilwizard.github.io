@@ -8,15 +8,13 @@
     <link rel="stylesheet" href="https://pyscript.net/releases/2026.7.3/core.js" />
     <script type="module" src="https://pyscript.net/releases/2026.7.3/core.js"></script>
     <style>
-        body { background-color: #0d1117; margin: 0; padding: 20px; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #0d1117; margin: 0; padding: 20px; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         #v-port { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; }
         canvas { border: 1px solid #30363d; background-color: #0d1117; border-radius: 6px; }
         #k-trap { position: absolute; top: -3000px; left: -3000px; }
         #t-render { position: absolute; top: 110px; left: calc(50% - 435px); width: 850px; height: 530px; overflow-y: auto; color: #c9d1d9; font-size: 15px; line-height: 1.6; display: none; pointer-events: auto; }
         #t-render h1 { color: #58a6ff; font-size: 24px; margin-top: 0; }
         #t-render p { margin-bottom: 15px; }
-        #t-render a { color: #f85149; text-decoration: none; font-weight: 500; }
-        #t-render a:hover { text-decoration: underline; }
         .py-loading, py-script, mpy-script { display: none !important; }
     </style>
 </head>
@@ -40,28 +38,66 @@
         let state = {
             sMode: 0,
             queryStr: "",
+            spoofUrl: "",
             siteEntries: [],
             scrollOffset: 0,
             maxScroll: 0,
             tRender: tRender,
-            isFocused: false,
-            spoofTitle: "Google",
-            spoofIcon: "https://google.com"
+            isFocused: false
         };
         
         let coordinatesMap = [];
 
-        function updateTabSettings(title, iconUrl) {
-            document.title = title;
-            let iconNode = document.getElementById('i-node');
-            if (iconNode) iconNode.href = iconUrl;
+        async function launchTabSpoof() {
+            let target = prompt("Enter a URL/Link/Website", "google.com");
+            if (!target || !target.trim()) return;
+            
+            target = target.trim();
+            state.spoofUrl = target;
+
+            let workingUrl = target;
+            if (!/^https?:\/\//i.test(workingUrl)) {
+                workingUrl = 'https://' + workingUrl;
+            }
+
+            let domainName = "";
+            try {
+                let urlObj = new URL(workingUrl);
+                domainName = urlObj.hostname;
+                document.title = domainName.replace(/^www\./, '');
+                
+                let iconNode = document.getElementById('i-node');
+                if (iconNode) {
+                    iconNode.href = `https://google.com{domainName}&sz=64`;
+                }
+            } catch(e) {
+                document.title = "Loading...";
+            }
+
+            try {
+                const proxyUrl = `https://allorigins.win{encodeURIComponent(workingUrl)}`;
+                const res = await fetch(proxyUrl);
+                const data = await res.json();
+                
+                const titleMatch = data.contents.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+                if (titleMatch && titleMatch[1]) {
+                    document.title = titleMatch[1].trim();
+                }
+            } catch (err) {
+                console.log("Could not resolve authentic metadata, sticking to domain naming.");
+            }
+
+            try {
+                window.history.replaceState({}, "", "/" + target);
+            } catch (e) {}
+            
+            triggerUIRender();
         }
 
         function triggerUIRender() {
-            const renderEvent = new CustomEvent('requestFrameworkDraw', {
+            window.dispatchEvent(new CustomEvent('requestFrameworkDraw', {
                 detail: { ctx, canvas, state }
-            });
-            window.dispatchEvent(renderEvent);
+            }));
         }
 
         window.addEventListener('frameworkDrawComplete', (e) => {
@@ -69,7 +105,6 @@
             state.maxScroll = e.detail.calculatedMaxScroll;
         });
 
-        // Dynamic Cursor Changes
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             const mX = e.clientX - rect.left;
@@ -88,35 +123,6 @@
             canvas.style.cursor = currentCursor;
         });
 
-        canvas.addEventListener('wheel', (e) => {
-            if (state.sMode !== 1 || state.maxScroll <= 0) return;
-            e.preventDefault();
-            state.scrollOffset -= e.deltaY;
-            if (state.scrollOffset > 0) state.scrollOffset = 0;
-            if (state.scrollOffset < -state.maxScroll) state.scrollOffset = -state.maxScroll;
-            triggerUIRender();
-        }, { passive: false });
-
-        window.addEventListener('pyIndexBroadcast', (e) => {
-            const rawMatrix = JSON.parse(atob(e.detail));
-            state.siteEntries = rawMatrix.strings.map((str, idx) => ({
-                text: str,
-                coord: rawMatrix.coords[idx],
-                fl: rawMatrix.floats[idx],
-                asset: rawMatrix.assets[idx]
-            }));
-            state.sMode = 1;
-            state.scrollOffset = 0;
-            triggerUIRender();
-        });
-
-        window.addEventListener('pyPageBroadcast', (e) => {
-            tRender.innerHTML = e.detail;
-            state.sMode = 2;
-            state.scrollOffset = 0;
-            triggerUIRender();
-        });
-
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
             const mX = e.clientX - rect.left;
@@ -128,19 +134,17 @@
                 if (mX >= zone.x && mX <= (zone.x + zone.w) && mY >= zone.y && mY <= (zone.y + zone.h)) {
                     if (zone.type === 'input-field') {
                         state.isFocused = true;
+                        input.value = state.queryStr;
                         input.focus();
                     } else if (zone.action === 1) {
-                        if (input.value.trim() !== "") {
-                            window.dispatchEvent(new CustomEvent('triggerSearch', { detail: input.value }));
+                        if (state.queryStr.trim() !== "") {
+                            window.dispatchEvent(new CustomEvent('triggerSearch', { detail: state.queryStr }));
                         }
                     } else if (zone.action === 2) {
-                        updateTabSettings(state.spoofTitle, state.spoofIcon);
+                        launchTabSpoof();
                     } else if (zone.action === 3) {
                         const target = state.siteEntries[zone.index].asset;
                         window.dispatchEvent(new CustomEvent('triggerPageLoad', { detail: target }));
-                    } else if (zone.action === 4) {
-                        state.spoofTitle = zone.profileTitle;
-                        state.spoofIcon = zone.profileIcon;
                     }
                 }
             });
@@ -148,8 +152,10 @@
         });
 
         input.addEventListener('input', (e) => {
-            state.queryStr = e.target.value;
-            triggerUIRender();
+            if (state.isFocused) {
+                state.queryStr = e.target.value;
+                triggerUIRender();
+            }
         });
 
         input.addEventListener('keydown', (e) => {
@@ -158,7 +164,6 @@
             }
         });
 
-        // Blinking Cursor Timer Loop
         setInterval(() => { if (state.isFocused) triggerUIRender(); }, 500);
         triggerUIRender();
     </script>
