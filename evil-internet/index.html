@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="t-node">...</title>
+    <title id="t-node">SiteMask Portal</title>
     <link id="i-node" rel="icon" type="image/x-icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
     <link rel="stylesheet" href="https://pyscript.net/releases/2026.7.3/core.js" />
     <script type="module" src="https://pyscript.net/releases/2026.7.3/core.js"></script>
     <style>
-        body { background-color: #000c40; margin: 0; padding: 20px; overflow: hidden; }
+        body { background-color: #0d1117; margin: 0; padding: 20px; overflow: hidden; font-family: sans-serif; }
         #v-port { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; }
-        canvas { border: 2px solid #0050ef; background-color: #00082c; cursor: pointer; }
+        canvas { border: 2px solid #30363d; background-color: #161b22; }
         #k-trap { position: absolute; top: -3000px; left: -3000px; }
-        #t-render { position: absolute; top: 110px; left: calc(50% - 435px); width: 850px; height: 530px; overflow-y: auto; color: #efefef; font-family: sans-serif; font-size: 16px; line-height: 1.6; display: none; pointer-events: auto; }
-        #t-render h1 { color: #66fcf1; font-size: 28px; margin-top: 0; }
+        #t-render { position: absolute; top: 110px; left: calc(50% - 435px); width: 850px; height: 530px; overflow-y: auto; color: #c9d1d9; font-size: 16px; line-height: 1.6; display: none; pointer-events: auto; }
+        #t-render h1 { color: #58a6ff; font-size: 28px; margin-top: 0; }
         #t-render p { margin-bottom: 15px; }
-        #t-render a { color: #ff0055; text-decoration: none; font-weight: bold; }
+        #t-render a { color: #f85149; text-decoration: none; font-weight: bold; }
         #t-render a:hover { text-decoration: underline; }
         .py-loading, py-script, mpy-script { display: none !important; }
     </style>
@@ -43,31 +43,48 @@
             siteEntries: [],
             scrollOffset: 0,
             maxScroll: 0,
-            tRender: tRender
+            tRender: tRender,
+            isFocused: false,
+            spoofTitle: "Google",
+            spoofIcon: "https://google.com"
         };
         
         let coordinatesMap = [];
 
-        const fontLink = document.createElement('link');
-        fontLink.rel = 'stylesheet';
-        fontLink.href = _un(fontUrl);
-        document.head.appendChild(fontLink);
-
-        document.getElementById('t-node').innerText = _un(maskTitle);
-        document.getElementById('i-node').href = _un(iconUrl);
+        function applyTabCloak(title, iconUrl) {
+            document.title = title;
+            let iconNode = document.getElementById('i-node');
+            if (iconNode) iconNode.href = iconUrl;
+        }
 
         function triggerUIRender() {
-            // Forward the graphics calculation request directly to render.js pipeline
             const renderEvent = new CustomEvent('requestFrameworkDraw', {
                 detail: { ctx, canvas, state }
             });
             window.dispatchEvent(renderEvent);
         }
 
-        // Receive layout metrics back from render.js
         window.addEventListener('frameworkDrawComplete', (e) => {
             coordinatesMap = e.detail.clickRegistry;
             state.maxScroll = e.detail.calculatedMaxScroll;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mX = e.clientX - rect.left;
+            const mY = e.clientY - rect.top;
+            let currentCursor = 'default';
+
+            coordinatesMap.forEach(zone => {
+                if (mX >= zone.x && mX <= (zone.x + zone.w) && mY >= zone.y && mY <= (zone.y + zone.h)) {
+                    if (zone.type === 'button' || zone.type === 'interactive-node') {
+                        currentCursor = 'pointer';
+                    } else if (zone.type === 'input-field') {
+                        currentCursor = 'text';
+                    }
+                }
+            });
+            canvas.style.cursor = currentCursor;
         });
 
         canvas.addEventListener('wheel', (e) => {
@@ -104,31 +121,30 @@
             const mX = e.clientX - rect.left;
             const mY = e.clientY - rect.top;
 
-            if (state.sMode === 0) input.focus();
+            state.isFocused = false;
 
             coordinatesMap.forEach(zone => {
                 if (mX >= zone.x && mX <= (zone.x + zone.w) && mY >= zone.y && mY <= (zone.y + zone.h)) {
-                    if (zone.action === 1) {
+                    if (zone.type === 'input-field') {
+                        state.isFocused = true;
+                        input.focus();
+                    } else if (zone.action === 1) {
                         if (input.value.trim() !== "") {
                             window.dispatchEvent(new CustomEvent('triggerSearch', { detail: input.value }));
                         }
                     } else if (zone.action === 2) {
-                        state.sMode = 0;
-                        state.queryStr = "";
-                        input.value = "";
-                        state.scrollOffset = 0;
-                        tRender.innerHTML = "";
-                        ctx.fillStyle = "#ffffff";
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.fillStyle = "#222222";
-                        ctx.font = "bold 24px Arial";
-                        ctx.fillText(_un(fakeTitle), 50, 100);
+                        // Apply customizable Tab Cloaking configurations instantly
+                        applyTabCloak(state.spoofTitle, state.spoofIcon);
                     } else if (zone.action === 3) {
                         const target = state.siteEntries[zone.index].asset;
                         window.dispatchEvent(new CustomEvent('triggerPageLoad', { detail: target }));
+                    } else if (zone.action === 4) {
+                        state.spoofTitle = zone.profileTitle;
+                        state.spoofIcon = zone.profileIcon;
                     }
                 }
             });
+            triggerUIRender();
         });
 
         input.addEventListener('input', (e) => {
@@ -142,8 +158,10 @@
             }
         });
 
-        document.fonts.load('1em "EB Garamond"').then(() => { triggerUIRender(); });
+        setInterval(() => { if (state.isFocused) triggerUIRender(); }, 500);
+        triggerUIRender();
     </script>
-    <script type="py" src="engine.py" async></script>
+    
+    <script type="py" src="./engine.py" async></script>
 </body>
 </html>
