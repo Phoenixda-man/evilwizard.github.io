@@ -29,6 +29,8 @@
         let pageLines = [];
         let siteEntries = [];
         let coordinatesMap = [];
+        let scrollOffset = 0;
+        let maxScroll = 0;
 
         const fontLink = document.createElement('link');
         fontLink.rel = 'stylesheet';
@@ -41,6 +43,52 @@
         function drawFrame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             coordinatesMap = [];
+
+            let contentStartY = 110;
+
+            if (sMode === 1) {
+                siteEntries.forEach((entry, idx) => {
+                    let yPos = contentStartY + (idx * 95) + scrollOffset;
+                    if (yPos < 65 || yPos > canvas.height + 20) return;
+
+                    ctx.fillStyle = "#66fcf1";
+                    ctx.font = "bold 22px " + _un(f1);
+                    ctx.fillText(entry.text, 50, yPos);
+
+                    ctx.fillStyle = "#efefef";
+                    ctx.font = "14px " + _un(f2);
+                    ctx.fillText(_un(uiDesc), 50, yPos + 24);
+
+                    coordinatesMap.push({
+                        x: 50, y: yPos - 20,
+                        w: ctx.measureText(entry.text).width, h: 24,
+                        type: 3, index: idx
+                    });
+                });
+                maxScroll = Math.max(0, (siteEntries.length * 95) - (canvas.height - 160));
+            }
+            else if (sMode === 2) {
+                ctx.fillStyle = "#efefef";
+                ctx.font = "14px " + _un(f2);
+                let lineY = contentStartY + scrollOffset;
+                pageLines.forEach(l => {
+                    if (lineY >= 65 && lineY <= canvas.height - 20) {
+                        ctx.fillText(l, 40, lineY);
+                    }
+                    lineY += 24;
+                });
+                maxScroll = Math.max(0, (pageLines.length * 24) - (canvas.height - 160));
+            }
+
+            if (maxScroll > 0) {
+                let trackH = canvas.height - 110;
+                let barH = Math.max(20, (trackH / (maxScroll + trackH)) * trackH);
+                let barY = 85 + (-scrollOffset / maxScroll) * (trackH - barH);
+                ctx.fillStyle = "#00105c";
+                ctx.fillRect(canvas.width - 12, 85, 8, trackH);
+                ctx.fillStyle = "#ff0055";
+                ctx.fillRect(canvas.width - 12, barY, 8, barH);
+            }
 
             ctx.fillStyle = "#00105c";
             ctx.fillRect(0, 0, canvas.width, 55);
@@ -88,37 +136,17 @@
                 ctx.fillStyle = "#efefef";
                 ctx.font = "14px " + _un(f2);
                 ctx.fillText(_un(uiPrompt), canvas.width / 2 - 200, 320);
-            } 
-            else if (sMode === 1) {
-                siteEntries.forEach((entry, idx) => {
-                    let yPos = 120 + (idx * 90);
-                    if (yPos > canvas.height - 60) return;
-
-                    ctx.fillStyle = "#66fcf1";
-                    ctx.font = "bold 22px " + _un(f1);
-                    ctx.fillText(entry.text, 50, yPos);
-
-                    ctx.fillStyle = "#efefef";
-                    ctx.font = "14px " + _un(f2);
-                    ctx.fillText(_un(uiDesc), 50, yPos + 24);
-
-                    coordinatesMap.push({
-                        x: 50, y: yPos - 20,
-                        w: ctx.measureText(entry.text).width, h: 24,
-                        type: 3, index: idx
-                    });
-                });
-            }
-            else if (sMode === 2) {
-                ctx.fillStyle = "#efefef";
-                ctx.font = "14px " + _un(f2);
-                let lineY = 110;
-                pageLines.forEach(l => {
-                    ctx.fillText(l, 40, lineY);
-                    lineY += 24;
-                });
             }
         }
+
+        canvas.addEventListener('wheel', (e) => {
+            if (sMode === 0 || maxScroll <= 0) return;
+            e.preventDefault();
+            scrollOffset -= e.deltaY;
+            if (scrollOffset > 0) scrollOffset = 0;
+            if (scrollOffset < -maxScroll) scrollOffset = -maxScroll;
+            drawFrame();
+        }, { passive: false });
 
         window.addEventListener('pyIndexBroadcast', (e) => {
             const rawMatrix = JSON.parse(atob(e.detail));
@@ -129,12 +157,14 @@
                 asset: rawMatrix.assets[idx]
             }));
             sMode = 1;
+            scrollOffset = 0;
             drawFrame();
         });
 
         window.addEventListener('pyPageBroadcast', (e) => {
             pageLines = e.detail;
             sMode = 2;
+            scrollOffset = 0;
             drawFrame();
         });
 
@@ -151,6 +181,7 @@
                         sMode = 0;
                         queryStr = "";
                         input.value = "";
+                        scrollOffset = 0;
                         ctx.fillStyle = "#ffffff";
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.fillStyle = "#222222";
