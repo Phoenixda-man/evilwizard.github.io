@@ -1,4 +1,3 @@
-// Central UI Layout definitions and core canvas drawing engine loop
 const uiComponents = [
     {
         id: "top-bar",
@@ -152,11 +151,9 @@ function drawEngineFrame(ctx, canvas, state) {
     return { clickRegistry, calculatedMaxScroll: state.maxScroll };
 }
 
-// Intercept window event signaling rules
 window.addEventListener('requestFrameworkDraw', (e) => {
     const { ctx, canvas, state } = e.detail;
     const engineResults = drawEngineFrame(ctx, canvas, state);
     
-    // Broadcast computed hitboxes and layout limits straight back to index.html execution scope
     window.dispatchEvent(new CustomEvent('frameworkDrawComplete', { detail: engineResults }));
 });
