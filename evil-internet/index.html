@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="t-node">...</title>
     <link id="i-node" rel="icon" type="image/x-icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-    <script type="module" src="https://pyscript.net"></script>
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
     <style>
         body { background-color: #000c40; margin: 0; padding: 20px; overflow: hidden; }
         #v-port { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
@@ -18,6 +18,9 @@
         <canvas id="e-canvas" width="950" height="700"></canvas>
     </div>
     <input type="text" id="k-trap" autocomplete="off">
+    <script>
+        const _un = (arr) => arr.map(c => String.fromCharCode(c)).join('');
+    </script>
     <script src="assets.js"></script>
     <script>
         const canvas = document.getElementById('e-canvas');
@@ -43,7 +46,6 @@
         function drawFrame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             coordinatesMap = [];
-
             let contentStartY = 110;
 
             if (sMode === 1) {
