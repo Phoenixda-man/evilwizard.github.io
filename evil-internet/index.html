@@ -9,15 +9,21 @@
     <script defer src="https://pyscript.net"></script>
     <style>
         body { background-color: #000c40; margin: 0; padding: 20px; overflow: hidden; }
-        #v-port { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        #v-port { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; }
         canvas { border: 2px solid #0050ef; background-color: #00082c; cursor: pointer; }
         #k-trap { position: absolute; top: -3000px; left: -3000px; }
+        #t-render { position: absolute; top: 110px; left: calc(50% - 435px); width: 850px; height: 530px; overflow-y: auto; color: #efefef; font-family: sans-serif; font-size: 16px; line-height: 1.6; display: none; pointer-events: auto; }
+        #t-render h1 { color: #66fcf1; font-size: 28px; margin-top: 0; }
+        #t-render p { margin-bottom: 15px; }
+        #t-render a { color: #ff0055; text-decoration: none; font-weight: bold; }
+        #t-render a:hover { text-decoration: underline; }
         .py-loading, py-script { display: none !important; }
     </style>
 </head>
 <body>
     <div id="v-port">
         <canvas id="e-canvas" width="950" height="700"></canvas>
+        <div id="t-render"></div>
     </div>
     <input type="text" id="k-trap" autocomplete="off">
     <script>
@@ -28,10 +34,10 @@
         const canvas = document.getElementById('e-canvas');
         const ctx = canvas.getContext('2d');
         const input = document.getElementById('k-trap');
+        const tRender = document.getElementById('t-render');
         
         let sMode = 0;
         let queryStr = "";
-        let pageLines = [];
         let siteEntries = [];
         let coordinatesMap = [];
         let scrollOffset = 0;
@@ -51,6 +57,7 @@
             let contentStartY = 110;
 
             if (sMode === 1) {
+                tRender.style.display = "none";
                 siteEntries.forEach((entry, idx) => {
                     let yPos = contentStartY + (idx * 95) + scrollOffset;
                     if (yPos < 65 || yPos > canvas.height + 20) return;
@@ -72,19 +79,10 @@
                 maxScroll = Math.max(0, (siteEntries.length * 95) - (canvas.height - 160));
             }
             else if (sMode === 2) {
-                ctx.fillStyle = "#efefef";
-                ctx.font = "14px " + _un(f2);
-                let lineY = contentStartY + scrollOffset;
-                pageLines.forEach(l => {
-                    if (lineY >= 65 && lineY <= canvas.height - 20) {
-                        ctx.fillText(l, 40, lineY);
-                    }
-                    lineY += 24;
-                });
-                maxScroll = Math.max(0, (pageLines.length * 24) - (canvas.height - 160));
+                tRender.style.display = "block";
             }
 
-            if (maxScroll > 0) {
+            if (sMode !== 2 && maxScroll > 0) {
                 let trackH = canvas.height - 110;
                 let barH = Math.max(20, (trackH / (maxScroll + trackH)) * trackH);
                 let barY = 85 + (-scrollOffset / maxScroll) * (trackH - barH);
@@ -133,6 +131,7 @@
             coordinatesMap.push({ x: mX, y: mY, w: 200, h: 30, type: 2 });
 
             if (sMode === 0) {
+                tRender.style.display = "none";
                 ctx.fillStyle = "#ff0055";
                 ctx.font = "bold 44px " + _un(f1);
                 ctx.fillText(_un(titleStr), canvas.width / 2 - 100, 250);
@@ -144,7 +143,7 @@
         }
 
         canvas.addEventListener('wheel', (e) => {
-            if (sMode === 0 || maxScroll <= 0) return;
+            if (sMode !== 1 || maxScroll <= 0) return;
             e.preventDefault();
             scrollOffset -= e.deltaY;
             if (scrollOffset > 0) scrollOffset = 0;
@@ -166,7 +165,7 @@
         });
 
         window.addEventListener('pyPageBroadcast', (e) => {
-            pageLines = e.detail;
+            tRender.innerHTML = e.detail;
             sMode = 2;
             scrollOffset = 0;
             drawFrame();
@@ -186,6 +185,7 @@
                         queryStr = "";
                         input.value = "";
                         scrollOffset = 0;
+                        tRender.innerHTML = "";
                         ctx.fillStyle = "#ffffff";
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.fillStyle = "#222222";
