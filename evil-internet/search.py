@@ -33,5 +33,6 @@ async def execute_page_resolve(event):
 
 bridge_search = pyodide.ffi.create_proxy(execute_query_pipeline)
 bridge_resolve = pyodide.ffi.create_proxy(execute_page_resolve)
+
 window.addEventListener('triggerSearch', bridge_search)
 window.addEventListener('triggerPageLoad', bridge_resolve)
