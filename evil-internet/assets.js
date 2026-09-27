@@ -1,0 +1,15 @@
+const _un = (arr) => arr.map(c => String.fromCharCode(c)).join('');
+const f1 =;
+const f2 =;
+const titleStr =;
+const repoStr =;
+const maskTitle =;
+const fontUrl =;
+const iconUrl =;
+const pathDefault =;
+const pathResults =;
+const uiHome =;
+const uiMask =;
+const uiPrompt =;
+const uiDesc =;
+const fakeTitle =;
