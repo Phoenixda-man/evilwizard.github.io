@@ -1,6 +1,6 @@
-from pyscript import window
 import json
 import base64
+from pyscript import window
 import pyodide
 
 def _build_character_cache(byte_array):
