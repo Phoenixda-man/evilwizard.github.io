@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="t-node">...</title>
     <link id="i-node" rel="icon" type="image/x-icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-    <link rel="stylesheet" href="https://pyscript.net/releases/2026.7.3/core.js" />
-    <script type="module" src="https://pyscript.net/releases/2026.7.3/core.js"></script>
+    <link rel="stylesheet" href="https://cloudflare.com" />
+    <script type="module" src="https://pyscript.net"></script>
     <style>
         body { background-color: #000c40; margin: 0; padding: 20px; overflow: hidden; }
         #v-port { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; }
@@ -26,22 +26,27 @@
         <div id="t-render"></div>
     </div>
     <input type="text" id="k-trap" autocomplete="off">
-    <script>
-        const _un = (arr) => arr.map(c => String.fromCharCode(c)).join('');
-    </script>
+    
+    <script>const _un = (arr) => arr.map(c => String.fromCharCode(c)).join('');</script>
     <script src="assets.js"></script>
+    <script src="render.js"></script>
+    
     <script>
         const canvas = document.getElementById('e-canvas');
         const ctx = canvas.getContext('2d');
         const input = document.getElementById('k-trap');
         const tRender = document.getElementById('t-render');
         
-        let sMode = 0;
-        let queryStr = "";
-        let siteEntries = [];
+        let state = {
+            sMode: 0,
+            queryStr: "",
+            siteEntries: [],
+            scrollOffset: 0,
+            maxScroll: 0,
+            tRender: tRender
+        };
+        
         let coordinatesMap = [];
-        let scrollOffset = 0;
-        let maxScroll = 0;
 
         const fontLink = document.createElement('link');
         fontLink.rel = 'stylesheet';
@@ -51,124 +56,47 @@
         document.getElementById('t-node').innerText = _un(maskTitle);
         document.getElementById('i-node').href = _un(iconUrl);
 
-        function drawFrame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            coordinatesMap = [];
-            let contentStartY = 110;
-
-            if (sMode === 1) {
-                tRender.style.display = "none";
-                siteEntries.forEach((entry, idx) => {
-                    let yPos = contentStartY + (idx * 95) + scrollOffset;
-                    if (yPos < 65 || yPos > canvas.height + 20) return;
-
-                    ctx.fillStyle = "#66fcf1";
-                    ctx.font = "bold 22px " + _un(f1);
-                    ctx.fillText(entry.text, 50, yPos);
-
-                    ctx.fillStyle = "#efefef";
-                    ctx.font = "14px " + _un(f2);
-                    ctx.fillText(_un(uiDesc), 50, yPos + 24);
-
-                    coordinatesMap.push({
-                        x: 50, y: yPos - 20,
-                        w: ctx.measureText(entry.text).width, h: 24,
-                        type: 3, index: idx
-                    });
-                });
-                maxScroll = Math.max(0, (siteEntries.length * 95) - (canvas.height - 160));
-            }
-            else if (sMode === 2) {
-                tRender.style.display = "block";
-            }
-
-            if (sMode !== 2 && maxScroll > 0) {
-                let trackH = canvas.height - 110;
-                let barH = Math.max(20, (trackH / (maxScroll + trackH)) * trackH);
-                let barY = 85 + (-scrollOffset / maxScroll) * (trackH - barH);
-                ctx.fillStyle = "#00105c";
-                ctx.fillRect(canvas.width - 12, 85, 8, trackH);
-                ctx.fillStyle = "#ff0055";
-                ctx.fillRect(canvas.width - 12, barY, 8, barH);
-            }
-
-            ctx.fillStyle = "#00105c";
-            ctx.fillRect(0, 0, canvas.width, 55);
-            ctx.strokeStyle = "#0050ef";
-            ctx.lineWidth = 1;
-            ctx.strokeRect(0, 0, canvas.width, 55);
-
-            ctx.fillStyle = "#ff0055";
-            ctx.font = "bold 20px " + _un(f1);
-            ctx.fillText(_un(titleStr), 25, 34);
-
-            ctx.fillStyle = "#00082c";
-            ctx.fillRect(180, 12, 630, 30);
-            ctx.strokeStyle = "#0050ef";
-            ctx.strokeRect(180, 12, 630, 30);
-
-            ctx.fillStyle = "#efefef";
-            ctx.font = "12px " + _un(f2);
-            let pathSuffix = sMode === 2 ? pathDefault : pathResults;
-            ctx.fillText(_un(repoStr) + _un(pathSuffix) + (sMode === 2 ? "" : queryStr), 195, 31);
-
-            ctx.fillStyle = "#ff0055";
-            ctx.fillRect(830, 12, 100, 30);
-            ctx.fillStyle = "#efefef";
-            ctx.font = "bold 13px " + _un(f1);
-            ctx.fillText(_un(uiHome), 862, 31);
-            coordinatesMap.push({ x: 830, y: 12, w: 100, h: 30, type: 1 });
-
-            const mX = canvas.width - 220;
-            const mY = canvas.height - 40;
-            ctx.fillStyle = "#00105c";
-            ctx.fillRect(mX, mY, 200, 30);
-            ctx.strokeStyle = "#0050ef";
-            ctx.strokeRect(mX, mY, 200, 30);
-            ctx.fillStyle = "#66fcf1";
-            ctx.font = "italic 14px " + _un(f1);
-            ctx.fillText(_un(uiMask), mX + 45, mY + 20);
-            coordinatesMap.push({ x: mX, y: mY, w: 200, h: 30, type: 2 });
-
-            if (sMode === 0) {
-                tRender.style.display = "none";
-                ctx.fillStyle = "#ff0055";
-                ctx.font = "bold 44px " + _un(f1);
-                ctx.fillText(_un(titleStr), canvas.width / 2 - 100, 250);
-                
-                ctx.fillStyle = "#efefef";
-                ctx.font = "14px " + _un(f2);
-                ctx.fillText(_un(uiPrompt), canvas.width / 2 - 200, 320);
-            }
+        function triggerUIRender() {
+            // Forward the graphics calculation request directly to render.js pipeline
+            const renderEvent = new CustomEvent('requestFrameworkDraw', {
+                detail: { ctx, canvas, state }
+            });
+            window.dispatchEvent(renderEvent);
         }
 
+        // Receive layout metrics back from render.js
+        window.addEventListener('frameworkDrawComplete', (e) => {
+            coordinatesMap = e.detail.clickRegistry;
+            state.maxScroll = e.detail.calculatedMaxScroll;
+        });
+
         canvas.addEventListener('wheel', (e) => {
-            if (sMode !== 1 || maxScroll <= 0) return;
+            if (state.sMode !== 1 || state.maxScroll <= 0) return;
             e.preventDefault();
-            scrollOffset -= e.deltaY;
-            if (scrollOffset > 0) scrollOffset = 0;
-            if (scrollOffset < -maxScroll) scrollOffset = -maxScroll;
-            drawFrame();
+            state.scrollOffset -= e.deltaY;
+            if (state.scrollOffset > 0) state.scrollOffset = 0;
+            if (state.scrollOffset < -state.maxScroll) state.scrollOffset = -state.maxScroll;
+            triggerUIRender();
         }, { passive: false });
 
         window.addEventListener('pyIndexBroadcast', (e) => {
             const rawMatrix = JSON.parse(atob(e.detail));
-            siteEntries = rawMatrix.strings.map((str, idx) => ({
+            state.siteEntries = rawMatrix.strings.map((str, idx) => ({
                 text: str,
                 coord: rawMatrix.coords[idx],
                 fl: rawMatrix.floats[idx],
                 asset: rawMatrix.assets[idx]
             }));
-            sMode = 1;
-            scrollOffset = 0;
-            drawFrame();
+            state.sMode = 1;
+            state.scrollOffset = 0;
+            triggerUIRender();
         });
 
         window.addEventListener('pyPageBroadcast', (e) => {
             tRender.innerHTML = e.detail;
-            sMode = 2;
-            scrollOffset = 0;
-            drawFrame();
+            state.sMode = 2;
+            state.scrollOffset = 0;
+            triggerUIRender();
         });
 
         canvas.addEventListener('click', (e) => {
@@ -176,42 +104,46 @@
             const mX = e.clientX - rect.left;
             const mY = e.clientY - rect.top;
 
-            if (sMode === 0) input.focus();
+            if (state.sMode === 0) input.focus();
 
             coordinatesMap.forEach(zone => {
                 if (mX >= zone.x && mX <= (zone.x + zone.w) && mY >= zone.y && mY <= (zone.y + zone.h)) {
-                    if (zone.type === 1 || zone.type === 2) {
-                        sMode = 0;
-                        queryStr = "";
+                    if (zone.action === 1) {
+                        if (input.value.trim() !== "") {
+                            window.dispatchEvent(new CustomEvent('triggerSearch', { detail: input.value }));
+                        }
+                    } else if (zone.action === 2) {
+                        state.sMode = 0;
+                        state.queryStr = "";
                         input.value = "";
-                        scrollOffset = 0;
+                        state.scrollOffset = 0;
                         tRender.innerHTML = "";
                         ctx.fillStyle = "#ffffff";
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.fillStyle = "#222222";
                         ctx.font = "bold 24px Arial";
                         ctx.fillText(_un(fakeTitle), 50, 100);
-                    } else if (zone.type === 3) {
-                        const target = siteEntries[zone.index].asset;
-                        const emitEvent = new CustomEvent('triggerPageLoad', { detail: target });
-                        window.dispatchEvent(emitEvent);
+                    } else if (zone.action === 3) {
+                        const target = state.siteEntries[zone.index].asset;
+                        window.dispatchEvent(new CustomEvent('triggerPageLoad', { detail: target }));
                     }
                 }
             });
         });
 
         input.addEventListener('input', (e) => {
-            queryStr = e.target.value;
-            drawFrame();
+            state.queryStr = e.target.value;
+            triggerUIRender();
         });
 
         input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && queryStr.trim() !== "") {
-                const emitSearch = new CustomEvent('triggerSearch', { detail: queryStr });
-                window.dispatchEvent(emitSearch);
+            if (e.key === 'Enter' && state.queryStr.trim() !== "") {
+                window.dispatchEvent(new CustomEvent('triggerSearch', { detail: state.queryStr }));
             }
         });
 
-        document.fonts.load('1em "EB Garamond"').then(() => { drawFrame(); });
+        document.fonts.load('1em "EB Garamond"').then(() => { triggerUIRender(); });
     </script>
-    <script type="py">
+    <script type="py" src="engine.py" async></script>
+</body>
+</html>
