@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="t-node">...</title>
     <link id="i-node" rel="icon" type="image/x-icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-    <script type="module" src="https://pyscript.net"></script>
+    <link rel="stylesheet" href="https://pyscript.net" />
+    <script defer src="https://pyscript.net"></script>
     <style>
         body { background-color: #000c40; margin: 0; padding: 20px; overflow: hidden; }
         #v-port { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
         canvas { border: 2px solid #0050ef; background-color: #00082c; cursor: pointer; }
         #k-trap { position: absolute; top: -3000px; left: -3000px; }
+        .py-loading, py-script { display: none !important; }
     </style>
 </head>
 <body>
@@ -212,6 +214,6 @@
 
         document.fonts.load('1em "EB Garamond"').then(() => { drawFrame(); });
     </script>
-    <script type="py" src="engine.py" async></script>
+    <py-script src="engine.py"></py-script>
 </body>
 </html>
