@@ -5,20 +5,20 @@ const uiComponents = [
         id: "top-navbar-strip",
         type: "panel",
         x: 0, y: 0, w: 950, h: 55,
-        bg: "#21262d", border: "#30363d"
+        bg: "#152550", border: "#3b5a9f"
     },
     {
         id: "brand-header-text",
         type: "text",
         x: 25, y: 34,
-        color: "#c9d1d9", fontSize: "18px", fontWeight: "600",
+        color: "#efefef", fontSize: "18px", fontWeight: "600",
         value: () => "SiteMask"
     },
     {
         id: "search-input-field",
         type: "input-field",
         x: 140, y: 12, w: 680, h: 32,
-        bg: "#0d1117", border: "#30363d",
+        bg: "#152040", border: "#202550",
         textX: 155, textY: 32, fontSize: "14px",
         placeholder: "Text goes here..."
     },
@@ -26,7 +26,7 @@ const uiComponents = [
         id: "search-action-btn",
         type: "button",
         x: 835, y: 12, w: 90, h: 32,
-        bg: "#238636", color: "#ffffff", fontSize: "13px", fontWeight: "600",
+        bg: "#3b5a9f", color: "#efefef", fontSize: "13px", fontWeight: "600",
         value: () => "Search",
         action: 1
     },
@@ -36,20 +36,20 @@ const uiComponents = [
         id: "spoof-panel-bg",
         type: "panel",
         x: 25, y: 615, w: 900, h: 60,
-        bg: "#161b22", border: "#30363d"
+        bg: "#000c60", border: "#3036a3"
     },
     {
         id: "spoof-status-text",
         type: "text",
         x: 45, y: 650,
-        color: "#8b949e", fontSize: "13px", fontWeight: "normal",
+        color: "#efefef", fontSize: "13px", fontWeight: "normal",
         value: () => window.stateSpoofLabel || "Spoof: None Set"
     },
     {
         id: "spoof-action-trigger-btn",
         type: "button",
         x: 775, y: 628, w: 130, h: 32,
-        bg: "#da3637", color: "#ffffff", fontSize: "13px", fontWeight: "600",
+        bg: "#da3637", color: "#efefef", fontSize: "13px", fontWeight: "600",
         value: () => "Spoof",
         action: 2
     }
@@ -61,7 +61,7 @@ function drawEngineFrame(ctx, canvas, state) {
     let contentStartY = 110;
     cursorVisibility = !cursorVisibility;
     
-    window.stateSpoofLabel = state.spoofUrl ? `Active Spoof Path -> /${state.spoofUrl}` : "Active Cloak Profile: None Set";
+    window.stateSpoofLabel = state.spoofUrl ? `Current Spoof URL -> /${state.spoofUrl}` : "Curent Spoof URL: None Set";
 
     if (state.sMode === 1) {
         state.tRender.style.display = "none";
@@ -75,7 +75,7 @@ function drawEngineFrame(ctx, canvas, state) {
 
             ctx.fillStyle = "#8b949e";
             ctx.font = "14px sans-serif";
-            ctx.fillText("Resource location endpoint payload directory.", 25, yPos + 22);
+            ctx.fillText("Image URL", 25, yPos + 22);
 
             clickRegistry.push({
                 x: 25, y: yPos - 18, w: ctx.measureText(entry.text).width, h: 22,
