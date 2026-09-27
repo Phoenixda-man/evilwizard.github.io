@@ -17,7 +17,7 @@
         #t-render p { margin-bottom: 15px; }
         #t-render a { color: #ff0055; text-decoration: none; font-weight: bold; }
         #t-render a:hover { text-decoration: underline; }
-        .py-loading, py-script { display: none !important; }
+        .py-loading, py-script, mpy-script { display: none !important; }
     </style>
 </head>
 <body>
@@ -214,6 +214,26 @@
 
         document.fonts.load('1em "EB Garamond"').then(() => { drawFrame(); });
     </script>
-    <script type="py" src="engine.py" async></script>
-</body>
-</html>
+    <script type="py">
+import json
+import base64
+from pyscript import window
+import pyodide
+
+async def execute_query_pipeline(event):
+    search_input = str(event.detail).lower()
+    coords = []
+    colors = ["#66fcf1"]
+    strings = [
+        "Google Core Matrix Index Node -> ei://google.com",
+        "DuckDuckGo Proxy Stream Endpoint -> ei://duckduckgo.com"
+    ]
+    floats = [1.0, 2.0]
+    assets = ["g_node", "e_node"]
+    payload = {"coords": coords, "colors": colors, "strings": strings, "floats": floats, "assets": assets}
+    serialized = json.dumps(payload)
+    scrambled_b64 = base64.b64encode(serialized.encode('utf-8')).decode('utf-8')
+    window.dispatchEvent(window.CustomEvent.new('pyIndexBroadcast', {'detail': scrambled_b64}))
+
+async def execute_page_resolve(event):
+    target_key = str(event.detail)
