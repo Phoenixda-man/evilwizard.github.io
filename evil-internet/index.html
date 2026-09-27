@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="t-node">...</title>
+    <link id="i-node" rel="icon" type="image/x-icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+    <script type="module" src="https://pyscript.net"></script>
+    <style>
+        body { background-color: #000c40; margin: 0; padding: 20px; overflow: hidden; }
+        #v-port { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        canvas { border: 2px solid #0050ef; background-color: #00082c; cursor: pointer; }
+        #k-trap { position: absolute; top: -3000px; left: -3000px; }
+    </style>
+</head>
+<body>
+    <div id="v-port">
+        <canvas id="e-canvas" width="950" height="700"></canvas>
+    </div>
+    <input type="text" id="k-trap" autocomplete="off">
+    <script src="assets.js"></script>
+    <script>
+        const canvas = document.getElementById('e-canvas');
+        const ctx = canvas.getContext('2d');
+        const input = document.getElementById('k-trap');
+        
+        let sMode = 0;
+        let queryStr = "";
+        let pageLines = [];
+        let siteEntries = [];
+        let coordinatesMap = [];
+
+        const fontLink = document.createElement('link');
+        fontLink.rel = 'stylesheet';
+        fontLink.href = _un(fontUrl);
+        document.head.appendChild(fontLink);
+
+        document.getElementById('t-node').innerText = _un(maskTitle);
+        document.getElementById('i-node').href = _un(iconUrl);
+
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            coordinatesMap = [];
+
+            ctx.fillStyle = "#00105c";
+            ctx.fillRect(0, 0, canvas.width, 55);
+            ctx.strokeStyle = "#0050ef";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0, 0, canvas.width, 55);
+
+            ctx.fillStyle = "#ff0055";
+            ctx.font = "bold 20px " + _un(f1);
+            ctx.fillText(_un(titleStr), 25, 34);
+
+            ctx.fillStyle = "#00082c";
+            ctx.fillRect(180, 12, 630, 30);
+            ctx.strokeStyle = "#0050ef";
+            ctx.strokeRect(180, 12, 630, 30);
+
+            ctx.fillStyle = "#efefef";
+            ctx.font = "12px " + _un(f2);
+            let pathSuffix = sMode === 2 ? pathDefault : pathResults;
+            ctx.fillText(_un(repoStr) + _un(pathSuffix) + (sMode === 2 ? "" : queryStr), 195, 31);
+
+            ctx.fillStyle = "#ff0055";
+            ctx.fillRect(830, 12, 100, 30);
+            ctx.fillStyle = "#efefef";
+            ctx.font = "bold 13px " + _un(f1);
+            ctx.fillText(_un(uiHome), 862, 31);
+            coordinatesMap.push({ x: 830, y: 12, w: 100, h: 30, type: 1 });
+
+            const mX = canvas.width - 220;
+            const mY = canvas.height - 40;
+            ctx.fillStyle = "#00105c";
+            ctx.fillRect(mX, mY, 200, 30);
+            ctx.strokeStyle = "#0050ef";
+            ctx.strokeRect(mX, mY, 200, 30);
+            ctx.fillStyle = "#66fcf1";
+            ctx.font = "italic 14px " + _un(f1);
+            ctx.fillText(_un(uiMask), mX + 45, mY + 20);
+            coordinatesMap.push({ x: mX, y: mY, w: 200, h: 30, type: 2 });
+
+            if (sMode === 0) {
+                ctx.fillStyle = "#ff0055";
+                ctx.font = "bold 44px " + _un(f1);
+                ctx.fillText(_un(titleStr), canvas.width / 2 - 100, 250);
+                
+                ctx.fillStyle = "#efefef";
+                ctx.font = "14px " + _un(f2);
+                ctx.fillText(_un(uiPrompt), canvas.width / 2 - 200, 320);
+            } 
+            else if (sMode === 1) {
+                siteEntries.forEach((entry, idx) => {
+                    let yPos = 120 + (idx * 90);
+                    if (yPos > canvas.height - 60) return;
+
+                    ctx.fillStyle = "#66fcf1";
+                    ctx.font = "bold 22px " + _un(f1);
+                    ctx.fillText(entry.text, 50, yPos);
+
+                    ctx.fillStyle = "#efefef";
+                    ctx.font = "14px " + _un(f2);
+                    ctx.fillText(_un(uiDesc), 50, yPos + 24);
+
+                    coordinatesMap.push({
+                        x: 50, y: yPos - 20,
+                        w: ctx.measureText(entry.text).width, h: 24,
+                        type: 3, index: idx
+                    });
+                });
+            }
+            else if (sMode === 2) {
+                ctx.fillStyle = "#efefef";
+                ctx.font = "14px " + _un(f2);
+                let lineY = 110;
+                pageLines.forEach(l => {
+                    ctx.fillText(l, 40, lineY);
+                    lineY += 24;
+                });
+            }
+        }
+
+        window.addEventListener('pyIndexBroadcast', (e) => {
+            const rawMatrix = JSON.parse(atob(e.detail));
+            siteEntries = rawMatrix.strings.map((str, idx) => ({
+                text: str,
+                coord: rawMatrix.coords[idx],
+                fl: rawMatrix.floats[idx],
+                asset: rawMatrix.assets[idx]
+            }));
+            sMode = 1;
+            drawFrame();
+        });
+
+        window.addEventListener('pyPageBroadcast', (e) => {
+            pageLines = e.detail;
+            sMode = 2;
+            drawFrame();
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mX = e.clientX - rect.left;
+            const mY = e.clientY - rect.top;
+
+            if (sMode === 0) input.focus();
+
+            coordinatesMap.forEach(zone => {
+                if (mX >= zone.x && mX <= (zone.x + zone.w) && mY >= zone.y && mY <= (zone.y + zone.h)) {
+                    if (zone.type === 1 || zone.type === 2) {
+                        sMode = 0;
+                        queryStr = "";
+                        input.value = "";
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = "#222222";
+                        ctx.font = "bold 24px Arial";
+                        ctx.fillText(_un(fakeTitle), 50, 100);
+                    } else if (zone.type === 3) {
+                        const target = siteEntries[zone.index].asset;
+                        const emitEvent = new CustomEvent('triggerPageLoad', { detail: target });
+                        window.dispatchEvent(emitEvent);
+                    }
+                }
+            });
+        });
+
+        input.addEventListener('input', (e) => {
+            queryStr = e.target.value;
+            drawFrame();
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && queryStr.trim() !== "") {
+                const emitSearch = new CustomEvent('triggerSearch', { detail: queryStr });
+                window.dispatchEvent(emitSearch);
+            }
+        });
+
+        document.fonts.load('1em "EB Garamond"').then(() => { drawFrame(); });
+    </script>
+    <script type="py" src="engine.py" async></script>
+</body>
+</html>
