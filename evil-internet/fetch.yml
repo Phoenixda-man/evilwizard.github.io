@@ -1,0 +1,57 @@
+name: Fetch
+
+on:
+  workflow_dispatch:
+      inputs:
+            url:
+                    description: 'URL'
+                            required: true
+                                    default: 'https://example.com'
+
+                                    permissions:
+                                      contents: write
+
+                                      jobs:
+                                        fetch-and-encode:
+                                            runs-on: ubuntu-latest
+                                                steps:
+                                                      - uses: actions/checkout@v4
+
+                                                            - run: |
+                                                                      sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev g++
+                                                                                g++ -std=c++20 -O2 fetcher.cpp -lcurl -o fetcher
+
+                                                                                      - env:
+                                                                                                TARGET_URL: ${{ github.event.inputs.url }}
+                                                                                                        run: |
+                                                                                                                  mkdir -p fetched
+                                                                                                                            RAND_NAME=$(python3 -c 'import secrets, string; chars = string.ascii_letters + string.digits; print("".join(secrets.choice(chars) for _ in range(32)))')
+                                                                                                                                      OUT_FILE="fetched/${RAND_NAME}.json"
+                                                                                                                                                ./fetcher "$TARGET_URL" "$OUT_FILE"
+
+                                                                                                                                                          python3 -c '
+                                                                                                                                                                    import glob, json, os
+                                                                                                                                                                              files = sorted(glob.glob("fetched/*.json"), key=os.path.getmtime, reverse=True)
+                                                                                                                                                                                        entries = []
+                                                                                                                                                                                                  for f in files:
+                                                                                                                                                                                                                if os.path.basename(f) == "manifest.json":
+                                                                                                                                                                                                                                  continue
+                                                                                                                                                                                                                                                with open(f, "r", encoding="utf-8") as fp:
+                                                                                                                                                                                                                                                                  d = json.load(fp)
+                                                                                                                                                                                                                                                                                entries.append({
+                                                                                                                                                                                                                                                                                                  "file": f,
+                                                                                                                                                                                                                                                                                                                    "url": d.get("source_url", ""),
+                                                                                                                                                                                                                                                                                                                                      "bytes": d.get("original_length", 0),
+                                                                                                                                                                                                                                                                                                                                                        "chars": d.get("encoded_chars", 0)
+                                                                                                                                                                                                                                                                                                                                                                      })
+                                                                                                                                                                                                                                                                                                                                                                                with open("fetched/manifest.json", "w", encoding="utf-8") as fp:
+                                                                                                                                                                                                                                                                                                                                                                                              json.dump(entries, fp, indent=2)
+                                                                                                                                                                                                                                                                                                                                                                                                        '
+
+                                                                                                                                                                                                                                                                                                                                                                                                              - run: |
+                                                                                                                                                                                                                                                                                                                                                                                                                        git config user.name "github-actions[bot]"
+                                                                                                                                                                                                                                                                                                                                                                                                                                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                                                                                                                                                                                                                                                                                                                                                                                                                                            git add fetched/
+                                                                                                                                                                                                                                                                                                                                                                                                                                                      git commit -m "Update" || exit 0
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                git push
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                
